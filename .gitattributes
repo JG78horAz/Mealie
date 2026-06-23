@@ -1,2 +1,5 @@
 *.css linguist-detectable=false
 *.html linguist-detectable=false
+*.sh text eol=lf
+docker/entry.sh text eol=lf
+docker/healthcheck.sh text eol=lf
