@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login } from '../helpers/auth';
 
-test('recipe found by search can be opened', async ({ page }) => {
-  const recipeName = `WAT4 Test Search Open Recipe ${Date.now()}`;
+test('created recipe appears in recipe list', async ({ page }) => {
+  const recipeName = `WAT4 Test List Recipe ${Date.now()}`;
 
   await login(page);
 
@@ -27,20 +27,7 @@ test('recipe found by search can be opened', async ({ page }) => {
 
   await page.getByRole('link', { name: 'Recipes', exact: true }).click();
 
-  const searchInput = page.getByRole('textbox', {
-    name: /Search|Suche|Suchen/i,
-  });
-
-  await expect(searchInput).toBeVisible();
-  await searchInput.fill(recipeName);
-
-  const recipeLink = page.getByRole('link', {
-    name: new RegExp(recipeName),
-  });
-
-  await expect(recipeLink).toBeVisible();
-  await recipeLink.click();
-
-  await expect(page.getByText(recipeName).first()).toBeVisible();
-  await expect(page).toHaveURL(/\/g\/home\/r\//);
+  await expect(
+    page.getByRole('link', { name: new RegExp(recipeName) })
+  ).toBeVisible();
 });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login } from '../helpers/auth';
 
 test('created recipe can be found using search', async ({ page }) => {
   const recipeName = `WAT4 Test Search Recipe ${Date.now()}`;

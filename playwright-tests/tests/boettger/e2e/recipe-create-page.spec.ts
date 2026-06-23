@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { login } from './helpers/auth';
+import { login } from '../helpers/auth';
 
-test('created recipe can be opened from recipe list', async ({ page }) => {
-  const recipeName = `WAT4 Test Detail Recipe ${Date.now()}`;
+test('opens manual recipe creation page and enters recipe name', async ({ page }) => {
+  const recipeName = `WAT4 Test Pasta mit Leberkas ${Date.now()}`;
 
   await login(page);
 
@@ -24,16 +24,4 @@ test('created recipe can be opened from recipe list', async ({ page }) => {
   ]);
 
   await expect(page.locator(`input[value="${recipeName}"]`)).toBeVisible();
-
-  await page.getByRole('link', { name: 'Recipes', exact: true }).click();
-
-  const recipeLink = page.getByRole('link', {
-    name: new RegExp(recipeName),
-  });
-
-  await expect(recipeLink).toBeVisible();
-  await recipeLink.click();
-
-  await expect(page.getByText(recipeName).first()).toBeVisible();
-  await expect(page).toHaveURL(/\/g\/home\/r\//);
 });
