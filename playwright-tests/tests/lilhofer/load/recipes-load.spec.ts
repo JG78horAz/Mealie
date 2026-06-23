@@ -55,5 +55,5 @@ test('recipe list handles parallel api requests', async ({ request }) => {
 
   console.log(`Load result: requests=${requestCount}, average=${Math.round(average)}ms, p95=${p95}ms`);
 
-  expect(p95).toBeLessThan(3000);
+  expect(p95).toBeLessThan(2000);
 });
