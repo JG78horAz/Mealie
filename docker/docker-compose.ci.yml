@@ -1,0 +1,4 @@
+services:
+  mealie:
+    environment:
+      BASE_URL: "http://localhost:9091"
