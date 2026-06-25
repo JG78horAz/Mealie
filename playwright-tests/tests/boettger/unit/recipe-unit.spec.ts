@@ -1,58 +1,110 @@
 import { test, expect } from '@playwright/test';
+import { useRecipePermissions } from '../../../../frontend/app/composables/recipes/use-recipe-permissions';
 
-function normalizeRecipeTitle(title: string): string {
-  return title.trim().replace(/\s+/g, ' ');
+function createRecipe(overrides = {}) {
+  return {
+    userId: 'recipe-owner',
+    groupId: 'group-1',
+    householdId: 'household-1',
+    settings: {
+      locked: false,
+    },
+    ...overrides,
+  } as any;
 }
 
-function isValidRecipeTitle(title: string): boolean {
-  return normalizeRecipeTitle(title).length >= 3;
+function createUser(overrides = {}) {
+  return {
+    id: 'user-1',
+    groupId: 'group-1',
+    householdId: 'household-1',
+    ...overrides,
+  } as any;
 }
 
-function createRecipeSlug(title: string): string {
-  return normalizeRecipeTitle(title)
-    .toLowerCase()
-    .replace(/ä/g, 'ae')
-    .replace(/ö/g, 'oe')
-    .replace(/ü/g, 'ue')
-    .replace(/ß/g, 'ss')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+function createHousehold(value: any) {
+  return {
+    value,
+  } as any;
 }
 
-function calculateTotalPreparationTime(prepTimeMinutes: number, cookTimeMinutes: number): number {
-  return prepTimeMinutes + cookTimeMinutes;
-}
+test('recipe owner can edit recipe', async () => {
+  const recipe = createRecipe({
+    userId: 'user-1',
+  });
 
-function formatServingText(servings: number): string {
-  if (servings === 1) {
-    return '1 serving';
-  }
+  const user = createUser({
+    id: 'user-1',
+  });
 
-  return `${servings} servings`;
-}
+  const recipeHousehold = createHousehold(undefined);
 
-test('normalizes recipe title by trimming spaces', async () => {
-  expect(normalizeRecipeTitle('  WAT4 Test Pasta  ')).toBe('WAT4 Test Pasta');
+  const { canEditRecipe } = useRecipePermissions(recipe, recipeHousehold, user);
+
+  expect(canEditRecipe.value).toBe(true);
 });
 
-test('normalizes multiple spaces inside recipe title', async () => {
-  expect(normalizeRecipeTitle('WAT4   Test   Pasta')).toBe('WAT4 Test Pasta');
+test('user without id cannot edit recipe', async () => {
+  const recipe = createRecipe();
+  const user = createUser({
+    id: undefined,
+  });
+
+  const recipeHousehold = createHousehold(undefined);
+
+  const { canEditRecipe } = useRecipePermissions(recipe, recipeHousehold, user);
+
+  expect(canEditRecipe.value).toBe(false);
 });
 
-test('rejects recipe titles with less than three characters', async () => {
-  expect(isValidRecipeTitle('A')).toBe(false);
-  expect(isValidRecipeTitle('  AB  ')).toBe(false);
+test('user from different group cannot edit recipe', async () => {
+  const recipe = createRecipe({
+    groupId: 'group-1',
+  });
+
+  const user = createUser({
+    groupId: 'group-2',
+  });
+
+  const recipeHousehold = createHousehold(undefined);
+
+  const { canEditRecipe } = useRecipePermissions(recipe, recipeHousehold, user);
+
+  expect(canEditRecipe.value).toBe(false);
 });
 
-test('creates a URL friendly recipe slug', async () => {
-  expect(createRecipeSlug('Käse Spätzle mit Öl')).toBe('kaese-spaetzle-mit-oel');
+test('user cannot edit locked recipe', async () => {
+  const recipe = createRecipe({
+    settings: {
+      locked: true,
+    },
+  });
+
+  const user = createUser();
+
+  const recipeHousehold = createHousehold(undefined);
+
+  const { canEditRecipe } = useRecipePermissions(recipe, recipeHousehold, user);
+
+  expect(canEditRecipe.value).toBe(false);
 });
 
-test('calculates total preparation time', async () => {
-  expect(calculateTotalPreparationTime(15, 25)).toBe(40);
-});
+test('user from another household cannot edit when household locks recipe edits', async () => {
+  const recipe = createRecipe({
+    householdId: 'household-1',
+  });
 
-test('formats serving text for one and multiple servings', async () => {
-  expect(formatServingText(1)).toBe('1 serving');
-  expect(formatServingText(4)).toBe('4 servings');
+  const user = createUser({
+    householdId: 'household-2',
+  });
+
+  const recipeHousehold = createHousehold({
+    preferences: {
+      lockRecipeEditsFromOtherHouseholds: true,
+    },
+  });
+
+  const { canEditRecipe } = useRecipePermissions(recipe, recipeHousehold, user);
+
+  expect(canEditRecipe.value).toBe(false);
 });

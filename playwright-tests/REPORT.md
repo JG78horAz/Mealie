@@ -1,4 +1,4 @@
-# WAT4 Abschlussprojekt - Testbericht Mealie
+# WAT4 Abschlussprojekt – Testbericht Mealie
 
 ## 1. Projektüberblick
 
@@ -19,11 +19,10 @@ Repository: https://github.com/JG78horAz/Mealie
 
 ### Verwendete KI-Tools
 
-- ChatGPT / WAT / Codex zur Unterstützung bei:
+- ChatGPT / WAT zur Unterstützung bei:
   - Teststruktur
   - Fehlersuche
   - Dokumentationsstruktur
-  - Ergänzung der CI/CD-Pipeline
 
 ## 3. Testumgebung
 
@@ -47,8 +46,6 @@ Für die Tests wurde ein eigener Testbenutzer verwendet:
 - Name: `Test User`
 - E-Mail: `test@example.com`
 - Passwort: `Test1234!`
-
-In der CI-Pipeline wird dieser Testbenutzer automatisch über die Admin-API angelegt, damit die Tests auch auf einer frischen Docker-Datenbank ausführbar sind.
 
 ### Playwright-Testprojekt
 
@@ -121,39 +118,17 @@ const recipeName = `WAT4 Test Recipe ${Date.now()}`;
 
 Die Tests werden außerdem mit nur einem Worker ausgeführt. Dadurch werden Seiteneffekte durch parallele UI-Tests reduziert.
 
-Zusätzlich melden sich die API- und Load-Tests jeweils selbst über `/api/auth/token` an. Dadurch sind sie nicht von einer vorherigen Browser-Session abhängig.
-
-Für komplett frische lokale Testläufe kann das Docker-Volume mit folgendem Befehl gelöscht werden:
-
-```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml down -v
-```
-
 ## 6. Testübersicht
-
-### Mindestanforderung
-
-Pro Person müssen mindestens folgende Tests vorhanden sein:
-
-| Testart | Mindestanzahl pro Person |
-|---|---:|
-| Unit Tests | 5 |
-| Integration Tests | 3 |
-| System-/E2E Tests | 2 |
-| Load Test | 1 |
-| Gesamt | 11 |
-
-Bei zwei Personen ergibt sich damit eine Mindestanzahl von 22 Tests.
 
 ### Patrick Boettger
 
 | Testart | Anzahl | Beschreibung |
 |---|---:|---|
-| Unit Tests | 6 | Hilfslogik für Rezepttitel, Slugs, Zeiten und Portionen |
+| Unit Tests | 5 | Rezept-Berechtigungslogik |
 | Integration Tests | 3 | API-Login und authentifizierter Benutzer-Endpunkt |
 | E2E Tests | 2 | Rezept erstellen, Rezept suchen und öffnen |
 | Load Test | 1 | Rezeptlisten-Endpunkt mit Ramp-up und Ramp-down |
-| Gesamt | 12 |
+| Gesamt | 11 | Mindestanforderung erfüllt |
 
 ### Lilhofer
 
@@ -163,16 +138,17 @@ Bei zwei Personen ergibt sich damit eine Mindestanzahl von 22 Tests.
 | Integration Tests | 3 | API-Authentifizierung und Rezept-API |
 | E2E Tests | 2 | Login und Rezeptanlage über UI |
 | Load Test | 1 | Parallele API-Anfragen |
-| Gesamt | 11 |
+| Gesamt | 11 | Mindestanforderung erfüllt |
 
 ### Gesamtprojekt
 
 | Kategorie | Anzahl |
 |---|---:|
-| Patrick Boettger | 12 |
+| Patrick Boettger | 11 |
 | Lilhofer | 11 |
-| Gesamt | 23 |
-| Gefordert | 22 |
+| Gesamt | 22 |
+
+Die geforderte Mindestanzahl von 22 Tests wurde damit erfüllt.
 
 ## 7. Unit Tests
 
@@ -184,18 +160,23 @@ Die Unit Tests von Patrick Boettger befinden sich in:
 playwright-tests/tests/boettger/unit/recipe-unit.spec.ts
 ```
 
-Getestet wird reine Hilfslogik ohne Browser und ohne API-Zugriff.
+Getestet wird echte Rezept-Berechtigungslogik aus dem Mealie-Frontend:
+
+```text
+frontend/app/composables/recipes/use-recipe-permissions.ts
+```
+
+Die Unit Tests prüfen, ob ein Benutzer ein Rezept bearbeiten darf. Dabei werden unterschiedliche Bedingungen aus der Mealie-Berechtigungslogik isoliert getestet.
 
 Die Unit Tests prüfen:
 
-1. Entfernen von Leerzeichen am Anfang und Ende eines Rezepttitels
-2. Normalisierung mehrfacher Leerzeichen innerhalb eines Titels
-3. Ablehnung zu kurzer Rezepttitel
-4. Erzeugung eines URL-freundlichen Slugs
-5. Berechnung der gesamten Zubereitungszeit
-6. Formatierung von Portionstexten
+1. Der Besitzer eines Rezepts darf das Rezept bearbeiten.
+2. Ein Benutzer ohne ID darf kein Rezept bearbeiten.
+3. Ein Benutzer aus einer anderen Gruppe darf das Rezept nicht bearbeiten.
+4. Ein gesperrtes Rezept darf nicht bearbeitet werden.
+5. Ein Benutzer aus einem anderen Haushalt darf nicht bearbeiten, wenn der Haushalt Rezeptbearbeitung durch andere Haushalte sperrt.
 
-Diese Tests sind schnell, stabil und unabhängig von der laufenden Mealie-Anwendung.
+Diese Tests laufen ohne Browser und ohne API-Zugriff. Sie testen gezielt eine einzelne Funktion aus dem Mealie-Code und gehören damit zur Unit-Test-Ebene.
 
 ### Lilhofer
 
@@ -361,59 +342,19 @@ Zusätzlich werden am Ende zusammengefasst:
 - Gesamtdauer
 - Erfolgsrate
 
-#### Ergebnis Patrick Boettger
-
-Beim letzten lokalen Lauf wurden folgende Werte gemessen:
-
-| Stufe | Parallele Requests | Dauer in ms | Erfolgreich | Fehler |
-|---:|---:|---:|---:|---:|
-| 1 | 1 | 89 | 1 | 0 |
-| 2 | 5 | 463 | 5 | 0 |
-| 3 | 10 | 1477 | 10 | 0 |
-| 4 | 15 | 2127 | 15 | 0 |
-| 5 | 20 | 2427 | 20 | 0 |
-| 6 | 15 | 2191 | 15 | 0 |
-| 7 | 10 | 1364 | 10 | 0 |
-| 8 | 5 | 197 | 5 | 0 |
-| 9 | 1 | 18 | 1 | 0 |
-
-Zusammenfassung:
-
-| Metrik | Wert |
-|---|---:|
-| Gesamtanzahl Requests | 82 |
-| Gesamtanzahl Fehler | 0 |
-| Erfolgsrate | 100 % |
-
-Visualisierung der Stufendauer:
-
-```text
-1 Request    | 89 ms   | #
-5 Requests   | 463 ms  | ####
-10 Requests  | 1477 ms | ##############
-15 Requests  | 2127 ms | #####################
-20 Requests  | 2427 ms | ########################
-15 Requests  | 2191 ms | ######################
-10 Requests  | 1364 ms | ##############
-5 Requests   | 197 ms  | ##
-1 Request    | 18 ms   | #
-```
-
 #### Ziel des Load Tests Patrick Boettger
 
 Ziel ist nicht, die absolute Belastungsgrenze von Mealie zu bestimmen.
 
 Der Test soll prüfen, ob ein zentraler API-Endpunkt bei steigender und anschließend sinkender paralleler Last stabil erreichbar bleibt.
 
-#### Erwartung und Analyse Patrick Boettger
+#### Erwartung Patrick Boettger
 
 Der Test gilt als erfolgreich, wenn:
 
 - keine Fehlerantworten auftreten
 - jede Laststufe unter 10 Sekunden abgeschlossen wird
 - die Erfolgsrate 100 Prozent beträgt
-
-Diese Kriterien wurden erfüllt. Der Rezeptlisten-Endpunkt blieb in allen Stufen stabil erreichbar. Die Dauer steigt bei höherer Parallelität erwartungsgemäß an, bleibt aber deutlich unter dem Grenzwert von 10 Sekunden pro Stufe. Die Maximallast mit 20 parallelen Requests wurde in 2427 ms verarbeitet.
 
 ### Lilhofer
 
@@ -428,7 +369,7 @@ Der Test prüft, ob die Rezeptliste parallele API-Anfragen verarbeiten kann.
 Getesteter Endpunkt:
 
 ```text
-GET /api/recipes?page=1&perPage=10
+GET /api/recipes
 ```
 
 Der Test simuliert mehrere gleichzeitige API-Zugriffe auf den Rezeptlisten-Endpunkt. Dabei wird geprüft, ob die parallelen Requests erfolgreich beantwortet werden.
@@ -438,28 +379,6 @@ Der Test simuliert mehrere gleichzeitige API-Zugriffe auf den Rezeptlisten-Endpu
 Ziel ist zu prüfen, ob der Rezeptlisten-Endpunkt bei gleichzeitigen Zugriffen stabil bleibt und keine Fehlerantworten liefert.
 
 Der Test ist ein einfacher API-basierter Load Test. Er untersucht nicht die maximale Belastungsgrenze der Anwendung, sondern prüft das Verhalten bei parallelen Requests.
-
-#### Ergebnis und Analyse Lilhofer
-
-Beim letzten lokalen Lauf wurden 20 parallele Requests ausgeführt.
-
-| Metrik | Wert |
-|---|---:|
-| Requests | 20 |
-| Durchschnittliche Antwortzeit | 791 ms |
-| p95 | 945 ms |
-| Fehler | 0 |
-| Grenzwert p95 | 2000 ms |
-
-Visualisierung:
-
-```text
-Grenzwert p95 | 2000 ms | ####################
-Gemessen p95  | 945 ms  | #########
-Durchschnitt  | 791 ms  | ########
-```
-
-Der p95-Wert lag deutlich unter dem definierten Grenzwert von 2000 ms. Alle Requests wurden erfolgreich beantwortet. Damit zeigt der Test, dass der Rezeptlisten-Endpunkt bei moderater paralleler Last stabil bleibt.
 
 ### Ergebnis der Load Tests
 
@@ -489,59 +408,139 @@ Die Testliste kann mit folgendem Befehl angezeigt werden:
 npx playwright test --list
 ```
 
-Beim letzten geprüften Stand wurden insgesamt 23 Tests erkannt.
-
-Beim letzten vollständigen lokalen Testlauf gegen die Docker-Instanz wurden alle Tests erfolgreich ausgeführt:
-
-```text
-Running 23 tests using 1 worker
-23 passed
-```
-
-Für eine frische lokale Ausführung ähnlich zur CI kann die Anwendung vorher mit Docker Compose zurückgesetzt und neu gestartet werden:
-
-```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml down -v
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d --build
-```
+Beim letzten geprüften Stand wurden insgesamt 22 Tests erkannt.
 
 ## 12. CI/CD Pipeline
 
-Für das Projekt wurde eine CI/CD-Pipeline mit GitHub Actions ergänzt.
+Für das Projekt wurde eine CI/CD-Pipeline mit GitHub Actions eingerichtet. Die Pipeline führt die Playwright-Tests automatisch aus, damit die Tests nicht nur lokal, sondern auch in einer frischen CI-Umgebung geprüft werden.
 
-Die Pipeline befindet sich in:
-
-```text
-.github/workflows/playwright-tests.yml
-```
-
-Zusätzlich gibt es einen CI-spezifischen Docker-Compose-Override:
+Die Pipeline startet bei:
 
 ```text
-docker/docker-compose.ci.yml
+push auf main
+pull_request auf main
+manuellem Start über workflow_dispatch
 ```
 
-Die Pipeline wird automatisch bei Pushes und Pull Requests auf `main` ausgeführt. Zusätzlich kann sie manuell über `workflow_dispatch` gestartet werden.
+### Ablauf der Pipeline
 
-Workflow:
+Die Pipeline führt folgende Schritte aus:
 
 1. Repository auschecken
 2. Node.js installieren
-3. Mealie mit Docker Compose bauen und starten
-4. Warten, bis `http://localhost:9091` erreichbar ist
-5. Als Default-Admin einloggen
-6. Testbenutzer `test@example.com` über `/api/admin/users` anlegen
-7. Login des Testbenutzers prüfen
-8. Abhängigkeiten im Ordner `playwright-tests` mit `npm ci` installieren
-9. Playwright-Browser installieren
-10. Tests ausführen
-11. HTML-Testbericht als Artefakt speichern
-12. Test Results als Artefakt speichern
-13. Docker-Container und Volume am Ende wieder entfernen
+3. Mealie mit Docker Compose starten
+4. Warten, bis die Anwendung erreichbar ist
+5. Testbenutzer für Playwright anlegen
+6. Playwright-Testabhängigkeiten installieren
+7. Chromium für Playwright installieren
+8. Playwright-Tests ausführen
+9. Playwright-Report als Artefakt hochladen
+10. Docker-Container und Testdaten wieder entfernen
 
-Die CI/CD-Pipeline stellt sicher, dass die Tests nicht nur lokal, sondern auch automatisiert im Repository ausgeführt werden können.
+### Docker Compose
 
-Technisch handelt es sich vor allem um eine CI-Pipeline, da kein Deployment in eine Produktivumgebung stattfindet. Für die Projektarbeit erfüllt sie den CI/CD-Teil, weil Build, Docker-Start, Testdatenvorbereitung und Testausführung automatisiert sind.
+Die Anwendung wird in der Pipeline mit Docker Compose gestartet:
+
+```bash
+docker compose -f docker/docker-compose.yml \
+  -f docker/docker-compose.ci.yml up -d --build
+```
+
+Dadurch wird Mealie in einer frischen Umgebung gestartet. Die Tests laufen also nicht gegen eine bereits lokal vorbereitete Anwendung, sondern gegen eine neu aufgebaute CI-Instanz.
+
+### Health Check
+
+Bevor die Tests starten, wartet die Pipeline darauf, dass Mealie erreichbar ist:
+
+```bash
+curl -fsS http://localhost:9091 >/dev/null
+```
+
+Dieser Schritt wird mehrfach wiederholt. Dadurch starten die Playwright-Tests erst, wenn die Anwendung tatsächlich bereit ist.
+
+Falls Mealie nicht erreichbar wird, gibt die Pipeline die Docker-Logs aus und beendet den Lauf mit einem Fehler.
+
+### Testbenutzer
+
+Für die automatisierten Tests wird in der Pipeline ein eigener Testbenutzer erstellt. Dafür wird zuerst ein Admin-Token über den Auth-Endpunkt geholt und danach ein Testbenutzer per API angelegt.
+
+Der Testbenutzer entspricht den lokal verwendeten Testdaten:
+
+```text
+E-Mail: test@example.com
+Passwort: Test1234!
+```
+
+Dadurch können dieselben Tests lokal und in GitHub Actions ausgeführt werden.
+
+### Testinstallation
+
+Die Pipeline installiert die Playwright-Abhängigkeiten im Ordner:
+
+```text
+playwright-tests/
+```
+
+Dafür wird verwendet:
+
+```bash
+npm ci
+```
+
+`npm ci` nutzt die exakten Versionen aus `package-lock.json` und ist dadurch für CI-Umgebungen besser geeignet als eine freie Neuinstallation.
+
+Anschließend wird Chromium installiert:
+
+```bash
+npx playwright install --with-deps chromium
+```
+
+Chromium wird explizit installiert, weil die Playwright-Konfiguration nur diesen Browser verwendet.
+
+### Testausführung
+
+Die Tests werden mit folgendem Befehl ausgeführt:
+
+```bash
+npx playwright test
+```
+
+Damit werden alle Tests aus dem Playwright-Testprojekt ausgeführt:
+
+- Unit Tests
+- Integration Tests
+- E2E Tests
+- Load Tests
+
+### Report und Cleanup
+
+Der Playwright-Report wird auch dann hochgeladen, wenn Tests fehlschlagen:
+
+```text
+if: always()
+```
+
+Dadurch kann man fehlgeschlagene Testläufe nachträglich analysieren.
+
+Am Ende wird Docker Compose ebenfalls mit `always()` beendet:
+
+```bash
+docker compose -f docker/docker-compose.yml \
+  -f docker/docker-compose.ci.yml down -v
+```
+
+Dabei werden Container und Volumes entfernt. Dadurch bleiben keine Testdaten aus alten Pipeline-Läufen erhalten.
+
+### Nutzen der Pipeline
+
+Die CI/CD-Pipeline stellt sicher, dass:
+
+- die Anwendung frisch gebaut wird,
+- die Tests in einer reproduzierbaren Umgebung laufen,
+- ein Testbenutzer automatisch angelegt wird,
+- alle Playwright-Tests automatisiert geprüft werden,
+- Testergebnisse als Report verfügbar sind,
+- die Umgebung nach dem Testlauf wieder bereinigt wird.
 
 ## 13. Bewertung der Testabdeckung
 
@@ -554,12 +553,6 @@ Die Tests decken mehrere Ebenen der Testpyramide ab:
 
 Dadurch werden sowohl einzelne Funktionen als auch das Zusammenspiel mehrerer Komponenten geprüft.
 
-Die Mindestanforderung von 11 Tests pro Person wird erfüllt:
-
-- Patrick Boettger: 12 Tests
-- Lilhofer: 11 Tests
-- Gesamt: 23 Tests
-
 ## 14. Fazit
 
 Das Projekt erfüllt die geforderten Testarten und die Mindestanzahl an Tests pro Person.
@@ -568,6 +561,6 @@ Die Anwendung wurde lokal mit Docker betrieben und mit Playwright getestet.
 
 Die Tests sind nach Personen und Testarten strukturiert.
 
-Für zentrale Funktionen wie Login, Rezeptanlage, Rezeptsuche, API-Authentifizierung und parallele API-Zugriffe wurden automatisierte Tests erstellt.
+Für zentrale Funktionen wie Login, Rezeptanlage, Rezeptsuche, API-Authentifizierung, Rezept-Berechtigungslogik und parallele API-Zugriffe wurden automatisierte Tests erstellt.
 
-Die Gesamtzahl von 23 Tests liegt über der Mindestanforderung von 22 Tests.
+Die Gesamtzahl von 22 Tests erfüllt die Mindestanforderung.
