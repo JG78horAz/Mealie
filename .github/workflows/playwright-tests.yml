@@ -85,6 +85,13 @@ jobs:
             exit 1
           fi
 
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn install --frozen-lockfile
+
       - name: Install Playwright test dependencies
         working-directory: playwright-tests
         run: npm ci
